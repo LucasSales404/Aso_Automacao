@@ -1,0 +1,66 @@
+version: "3.8"
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aso_app
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    networks:
+      - aso-network
+    depends_on:
+      - db
+    ports:
+      - "9000:9000"
+    command: php-fpm
+
+  webserver:
+    image: nginx:alpine
+    container_name: aso_webserver
+    ports:
+      - "8081:80"
+    volumes:
+      - ./:/var/www/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - aso-network
+    depends_on:
+      - app
+
+  db:
+    image: mysql:8.0
+    container_name: aso_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: aso_db
+      MYSQL_USER: aso_user
+      MYSQL_PASSWORD: aso_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - aso-network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: aso_phpmyadmin
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "8080:80"
+    networks:
+      - aso-network
+    depends_on:
+      - db
+
+networks:
+  aso-network:
+
+volumes:
+  dbdata:
